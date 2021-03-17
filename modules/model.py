@@ -17,7 +17,6 @@ class GRU4REC:
                  clip_grad=-1, p_dropout_input=.0, p_dropout_hidden=.5,
                  batch_size=50, use_cuda=True, time_sort=False, pretrained=None):
         """ The GRU4REC model
-
         Args:
             input_size (int): dimension of the gru input variables
             hidden_size (int): dimension of the gru hidden units
@@ -85,6 +84,8 @@ class GRU4REC:
         # initialize
         losses = []
         recalls = []
+        precisions = []
+        f1= []
         mrrs = []
         optimizer = self.optimizer
         hidden = self.gru.init_hidden()
@@ -114,9 +115,11 @@ class GRU4REC:
             # Calculate the mini-batch loss
             loss = self.loss_fn(logit_sampled)
             with torch.no_grad():
-                recall, mrr = E.evaluate(logit, target, k)
+                recall, precision,f1,mrr = evaluate(logit, target, k)
             losses.append(loss.item())         
             recalls.append(recall)
+            precisions.append(precision)
+            f1.append(f1)
             mrrs.append(mrr)
             # Gradient Clipping(Optional)
             if self.clip_grad != -1:
@@ -132,6 +135,8 @@ class GRU4REC:
         results = dict()
         results['loss'] = np.mean(losses)
         results['recall'] = np.mean(recalls)
+        results['precision'] = np.mean(precisions)
+        results['f1_score'] = np.mean(f1)
         results['mrr'] = np.mean(mrrs)
         
         end_time = time.time()
@@ -147,7 +152,6 @@ class GRU4REC:
         """
         Train the GRU4REC model on a pandas dataframe for several training epochs,
         and store the intermediate models to the user-specified directory.
-
         Args:
             n_epochs (int): the number of training epochs to run
             save_dir (str): the path to save the intermediate trained models
@@ -169,18 +173,15 @@ class GRU4REC:
 
     def test(self, dataset, k=20):
         """ Model evaluation
-
         Args:
             k (int): the length of the recommendation list
-
         Returns:
             avg_loss: mean of the losses over the session-parallel minibatches
             avg_recall: mean of the Recall@K over the session-parallel mini-batches
+            avg_precision: mean of the Precision@K over the session-parallel mini-batches
             avg_mrr: mean of the MRR@K over the session-parallel mini-batches
             wall_clock: time took for testing
-        """
+        """ 
         results = self.run_epoch(dataset, k=k, training=False)
         results = [f'{k}:{v:.3f}' for k, v in results.items()]
         print(f'Test result: {"/".join(results)}')
-    
-

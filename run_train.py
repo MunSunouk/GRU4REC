@@ -37,8 +37,8 @@ def main():
 
     PATH_DATA = Path('./data')
     PATH_MODEL = Path('./models')
-    train = 'train.tsv'
-    test = 'test.tsv'
+    train = 'user_train.csv'
+    test = 'user_test.csv'
     PATH_TRAIN = PATH_DATA / train
     PATH_TEST = PATH_DATA / test
 
